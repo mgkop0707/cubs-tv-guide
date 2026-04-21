@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cubs TV Guide – Port Orange</title>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* ── PASTE YOUR API KEY AND LINEUP ID HERE ──────────────────
+   API_KEY  : your xmltvlistings.com API key
+   LINEUP_ID: your configured lineup ID
+   ─────────────────────────────────────────────────────────── */
+
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Source Sans 3',sans-serif;background:#F5F5F0;color:#111}
+.topbar{background:#0D47A1;padding:12px 18px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.topbar-title{color:#fff;font-family:'Oswald',sans-serif;font-size:22px;font-weight:700;letter-spacing:1px;line-height:1.2}
+.topbar-title small{display:block;font-size:12px;color:#90CAF9;font-weight:500;letter-spacing:1px}
+.topbar-btns{display:flex;gap:10px;flex-wrap:wrap}
+.tbtn{font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:7px 16px;border-radius:5px;cursor:pointer;border:2px solid rgba(255,255,255,.7);background:transparent;color:#fff;transition:background .15s}
+.tbtn:hover{background:rgba(255,255,255,.15)}
+.tbtn.accent{background:#fff;color:#0D47A1;border-color:#fff}
+.tbtn.accent:hover{background:#BBDEFB}
+.tbtn.green{background:#2E7D32;border-color:#2E7D32}
+.tbtn.green:hover{background:#388E3C}
+
+.status-bar{padding:10px 18px;font-size:13px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.status-bar.ok{background:#E8F5E9;color:#1B5E20;border-bottom:1px solid #A5D6A7}
+.status-bar.err{background:#FFEBEE;color:#B71C1C;border-bottom:1px solid #FFCDD2}
+.status-bar.loading{background:#E3F2FD;color:#0D47A1;border-bottom:1px solid #90CAF9}
+.status-bar.warn{background:#FFF8E1;color:#E65100;border-bottom:1px solid #FFE082}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.legbar{background:#fff;border-bottom:1px solid #DDD;padding:9px 18px;display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center}
+.leg{display:flex;align-items:center;gap:5px;font-size:12px;color:#555;font-weight:600}
+.lsw{width:13px;height:13px;border-radius:3px;flex-shrink:0}
+
+.navbar{background:#fff;border-bottom:1px solid #DDD;padding:10px 18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.navlbl{font-family:'Oswald',sans-serif;font-size:18px;font-weight:600;color:#0D47A1;flex:1}
+.navbar select{font-size:13px;padding:6px 10px;border-radius:5px;border:1px solid #CCC;background:#fff;cursor:pointer}
+.nbtn{font-family:'Oswald',sans-serif;font-size:13px;font-weight:700;letter-spacing:.5px;padding:6px 14px;border-radius:5px;cursor:pointer;border:1px solid #CCC;background:#fff;color:#333;text-transform:uppercase}
+.nbtn:hover{background:#F5F5F5}
+
+.calwrap{padding:14px 18px}
+.calgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border-left:1px solid #CCC;border-top:1px solid #CCC;border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.dh{background:#1565C0;color:#fff;font-family:'Oswald',sans-serif;font-size:11px;font-weight:700;text-align:center;padding:6px 2px;letter-spacing:1px;border-right:1px solid rgba(255,255,255,.25)}
+.dh:last-child{border-right:none}
+.dc{border-right:1px solid #CCC;border-bottom:1px solid #CCC;min-height:100px;padding:4px;background:#fff}
+.dc:nth-child(7n){border-right:none}
+.dc.out{background:#F0F0EC}
+.dc.tod{box-shadow:inset 0 0 0 2.5px #1565C0}
+.dn{font-family:'Oswald',sans-serif;font-size:13px;font-weight:600;color:#AAA;display:block;margin-bottom:3px}
+.dn.tnow{color:#0D47A1;font-weight:700}
+.gb{border-radius:6px;padding:5px 6px 4px;cursor:pointer;margin-top:1px;transition:opacity .12s}
+.gb:hover{opacity:.85}
+.go{font-family:'Oswald',sans-serif;font-size:16px;font-weight:700;color:#fff;display:block;line-height:1.1;letter-spacing:.5px}
+.gc{font-family:'Oswald',sans-serif;font-size:21px;font-weight:700;color:#fff;display:block;margin-top:2px;line-height:1}
+.gt{font-size:10px;color:rgba(255,255,255,.78);display:block;margin-top:2px}
+.gauto{font-size:9px;color:rgba(255,255,255,.6);display:block;margin-top:1px;font-style:italic}
+.gadd{font-size:11px;color:#CCC;padding:6px 0;text-align:center;cursor:pointer;display:block;border-radius:4px;border:1px dashed #DDD;margin-top:2px}
+.gadd:hover{border-color:#AAA;color:#888}
+
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:#fff;border-radius:10px;padding:24px;width:380px;max-width:95vw;box-shadow:0 8px 40px rgba(0,0,0,.25)}
+.modal h2{font-family:'Oswald',sans-serif;font-size:20px;font-weight:700;color:#0D47A1;margin-bottom:16px}
+.fl{font-size:12px;font-weight:700;color:#666;margin:12px 0 4px;display:block;text-transform:uppercase;letter-spacing:.5px}
+.modal input,.modal select{width:100%;padding:9px 11px;border-radius:5px;border:1.5px solid #CCC;font-size:14px;font-family:'Source Sans 3',sans-serif;color:#111}
+.modal input:focus,.modal select:focus{outline:none;border-color:#1565C0}
+.hint{font-size:12px;color:#888;margin-top:4px;line-height:1.5}
+.pill{display:inline-block;padding:4px 14px;border-radius:20px;color:#fff;font-family:'Oswald',sans-serif;font-size:14px;font-weight:700;margin-top:7px}
+.mbtns{display:flex;gap:10px;margin-top:18px}
+.mb{flex:1;padding:9px;border-radius:6px;font-family:'Oswald',sans-serif;font-size:14px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;border:1.5px solid #CCC;background:#fff;color:#333}
+.mb:hover{background:#F5F5F5}
+.mb.sv{background:#0D47A1;color:#fff;border-color:#0D47A1}
+.mb.sv:hover{background:#1565C0}
+.mb.dl{border-color:#B71C1C;color:#B71C1C}
+.mb.dl:hover{background:#FFEBEE}
+
+.toast{position:fixed;bottom:20px;right:20px;background:#212121;color:#fff;padding:11px 18px;border-radius:6px;font-size:13px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:300;font-weight:600}
+.toast.show{opacity:1}
+
+@media print{
+  @page{size:letter portrait;margin:.4in .35in .35in .35in}
+  .noprint{display:none!important}
+  body{background:white;font-size:11pt}
+  .ph{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3pt solid #0D47A1;padding-bottom:6pt;margin-bottom:8pt}
+  .pht{font-family:'Oswald',sans-serif;font-size:20pt;font-weight:700;color:#0D47A1;line-height:1.1}
+  .pht small{font-size:9pt;color:#666;display:block;font-weight:500;letter-spacing:.5pt}
+  .pperiod{font-family:'Oswald',sans-serif;font-size:13pt;color:#333;font-weight:600}
+  .pleg{display:flex;flex-wrap:wrap;gap:4pt 14pt;margin-bottom:8pt;padding-bottom:6pt;border-bottom:.5pt solid #CCC}
+  .pli{display:flex;align-items:center;gap:4pt;font-size:8.5pt;font-weight:600}
+  .psw{width:11pt;height:11pt;border-radius:2pt;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border:1pt solid #999;border-radius:3pt;overflow:hidden;width:100%}
+  .pdh{background:#0D47A1!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;color:#fff!important;font-family:'Oswald',sans-serif;font-size:8.5pt;font-weight:700;text-align:center;padding:4pt 2pt;letter-spacing:.5pt;border-right:.5pt solid rgba(255,255,255,.35)}
+  .pdh:last-child{border-right:none}
+  .pdc{border-top:.5pt solid #CCC;border-right:.5pt solid #CCC;min-height:80pt;padding:3pt;background:#fff}
+  .pdc:nth-child(7n){border-right:none}
+  .pdc.out{background:#F0F0EC!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .pdn{font-family:'Oswald',sans-serif;font-size:10.5pt;font-weight:700;color:#BBB;display:block;margin-bottom:2pt}
+  .pbadge{border-radius:4pt;padding:5pt 5pt 4pt;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .popp{font-family:'Oswald',sans-serif;font-size:13pt;font-weight:700;color:#fff!important;display:block;line-height:1.1}
+  .pch{font-family:'Oswald',sans-serif;font-size:22pt;font-weight:700;color:#fff!important;display:block;margin-top:2pt;line-height:1}
+  .ptm{font-size:7.5pt;color:rgba(255,255,255,.88)!important;display:block;margin-top:2pt}
+  .poff{font-size:8pt;color:#CCC;text-align:center;display:block;padding-top:6pt}
+  .pftr{display:block;margin-top:7pt;font-size:7pt;color:#888;border-top:.5pt solid #DDD;padding-top:5pt;line-height:1.5}
+}
+</style>
+</head>
+<body>
+
+<div class="noprint">
+
+<div class="topbar">
+  <div class="topbar-title">⚾ Cubs TV Guide <small>PORT ORANGE · SPECTRUM · AUTO-UPDATED</small></div>
+  <div class="topbar-btns">
+    <button class="tbtn green" onclick="fetchGuide()">↻ Refresh channels</button>
+    <button class="tbtn accent" onclick="(window.top || window).print()">🖨 Print page</button>
+  </div>
+</div>
+
+<div class="status-bar loading" id="statusBar">
+  <div class="spin"></div>
+  <span id="statusMsg">Loading channel guide from Spectrum…</span>
+</div>
+
+<div class="legbar">
+  <span style="font-size:12px;font-weight:700;color:#555;margin-right:4px">CHANNELS:</span>
+  <div class="leg"><div class="lsw" style="background:#0D47A1"></div>MLB Extra Innings</div>
+  <div class="leg"><div class="lsw" style="background:#B71C1C"></div>FOX · Ch.1035</div>
+  <div class="leg"><div class="lsw" style="background:#C62828"></div>FS1 · Ch.1153</div>
+  <div class="leg"><div class="lsw" style="background:#E65100"></div>ESPN · Ch.1127</div>
+  <div class="leg"><div class="lsw" style="background:#BF360C"></div>ABC · Ch.1090</div>
+  <div class="leg"><div class="lsw" style="background:#1B5E20"></div>TBS · Ch.1236</div>
+  <div class="leg"><div class="lsw" style="background:#555"></div>Not available</div>
+  <span style="font-size:11px;color:#BBB;margin-left:4px">· Tap any game to edit · ✦ = auto-detected channel</span>
+</div>
+
+<div class="navbar">
+  <div class="navlbl" id="navLbl">Loading…</div>
+  <select id="psel" onchange="selectPeriod(+this.value)"></select>
+  <button class="nbtn" onclick="openAdd()">+ Add game</button>
+</div>
+
+<div class="calwrap">
+  <div class="calgrid" id="cal"></div>
+</div>
+
+</div><!-- end noprint -->
+
+<div id="printArea"></div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h2 id="modalTitle">Edit game</h2>
+    <label class="fl">Opponent</label>
+    <input id="fOpp" type="text" placeholder="e.g.  vs STL   or   @ MIL" maxlength="10">
+    <label class="fl">Game time (Eastern)</label>
+    <input id="fTime" type="text" placeholder="e.g. 7:05p ET">
+    <label class="fl">Channel</label>
+    <select id="fCh" onchange="updPrev()">
+      <option value="extra">MLB Extra Innings (enter channel below)</option>
+      <option value="fox">FOX — Ch. 3 / HD 1035</option>
+      <option value="fs1">FS1 — Ch. 32 / HD 1153</option>
+      <option value="espn">ESPN — Ch. 29 / HD 1127</option>
+      <option value="abc">ABC — Ch. 9 / HD 1090</option>
+      <option value="tbs">TBS — Ch. 12 / HD 1236</option>
+      <option value="apple">NOT AVAILABLE — Apple TV+</option>
+      <option value="peacock">NOT AVAILABLE — Peacock</option>
+    </select>
+    <div id="xtra">
+      <label class="fl">Exact Spectrum channel #</label>
+      <input id="fNum" type="text" placeholder="e.g. 765" maxlength="4" oninput="updPrev()">
+      <div class="hint">Auto-filled from guide when available. Override here if needed.</div>
+    </div>
+    <div><span class="pill" id="prev">Ch. 771–784</span></div>
+    <div class="mbtns">
+      <button class="mb dl" id="delbtn" onclick="delGame()">Delete</button>
+      <button class="mb" onclick="closeModal()">Cancel</button>
+      <button class="mb sv" onclick="saveGame()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  CONFIGURATION — edit these two lines only
+// ═══════════════════════════════════════════════════════════
+const API_KEY   = 'ZGFMEGNLV8';   // your xmltvlistings.com API key
+const LINEUP_ID = '10543';         // your Spectrum Port Orange lineup ID
+// ═══════════════════════════════════════════════════════════
+
+// Google Apps Script proxy — fetches XML from xmltvlistings.com server-side
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbznMaDbielxeSmeyEG1IHUnIIniz8Tcqbr8ieBX3fHN6OxI1zllUtHQpFsPnPUNYHoG5A/exec';
+
+// Multiple CORS proxies to try in order if one fails
+
+// ── Channel config ─────────────────────────────────────────
+const CH = {
+  extra:   { disp: n => n ? 'Ch.'+n : 'Ch.771–784', bg:'#0D47A1' },
+  fox:     { disp: ()  => 'Ch.1035',     bg:'#B71C1C' },
+  fs1:     { disp: ()  => 'Ch.1153',     bg:'#C62828' },
+  espn:    { disp: ()  => 'Ch.1127',     bg:'#E65100' },
+  abc:     { disp: ()  => 'Ch.1090',     bg:'#BF360C' },
+  tbs:     { disp: ()  => 'Ch.1236',     bg:'#1B5E20' },
+  apple:   { disp: ()  => 'Apple TV+',   bg:'#555555' },
+  peacock: { disp: ()  => 'Peacock',     bg:'#555555' },
+};
+const cd = (k,n) => (CH[k]||CH.extra).disp(n);
+const cb = k     => (CH[k]||CH.extra).bg;
+
+// ── Known national TV games (channel never changes) ────────
+// Format: 'YYYY-MM-DD': { ch: 'key' }
+const NATIONAL = {
+  '2026-04-14':{ ch:'fs1'     },  // FS1
+  '2026-04-24':{ ch:'apple'   },  // Apple TV+ Friday Night Baseball 10:15p ET
+  '2026-05-22':{ ch:'apple'   },  // Apple TV+ Friday Night Baseball 2p ET
+  '2026-05-25':{ ch:'fox'     },  // FOX
+  '2026-05-30':{ ch:'fox'     },  // FOX
+  '2026-05-31':{ ch:'peacock' },  // Peacock
+  '2026-06-07':{ ch:'peacock' },  // Peacock
+  '2026-06-14':{ ch:'abc'     },  // ABC
+  '2026-06-23':{ ch:'espn'    },  // ESPN
+  '2026-06-26':{ ch:'apple'   },  // Apple TV+ Friday Night Baseball 7:30p ET
+  '2026-07-04':{ ch:'fox'     },  // FOX
+  '2026-07-05':{ ch:'peacock' },  // Peacock
+  // '2026-07-12': Apple TV TBD — second half schedule not yet announced
+  '2026-07-20':{ ch:'fox'     },  // FOX
+  '2026-08-01':{ ch:'fox'     },  // FOX
+  '2026-08-16':{ ch:'abc'     },  // ABC
+  '2026-08-23':{ ch:'espn'    },  // ESPN
+  '2026-08-31':{ ch:'fs1'     },  // FS1
+  '2026-09-25':{ ch:'fox'     },  // FOX
+};
+
+// ── Season game schedule (opponents & times) ───────────────
+const SCHEDULE = {
+  '2026-04-03': { opp:'@ CLE', time:'4:10p ET' },
+  '2026-04-05': { opp:'@ CLE', time:'1:10p ET' },
+  '2026-04-06': { opp:'@ TB', time:'4:10p ET' },
+  '2026-04-07': { opp:'@ TB', time:'6:40p ET' },
+  '2026-04-08': { opp:'@ TB', time:'6:40p ET' },
+  '2026-04-10': { opp:'vs PIT', time:'2:20p ET' },
+  '2026-04-11': { opp:'vs PIT', time:'2:20p ET' },
+  '2026-04-12': { opp:'vs PIT', time:'2:20p ET' },
+  '2026-04-13': { opp:'@ PHI', time:'6:40p ET' },
+  '2026-04-14': { opp:'@ PHI', time:'6:40p ET' },
+  '2026-04-15': { opp:'@ PHI', time:'6:40p ET' },
+  '2026-04-17': { opp:'vs NYM', time:'2:20p ET' },
+  '2026-04-18': { opp:'vs NYM', time:'2:20p ET' },
+  '2026-04-19': { opp:'vs NYM', time:'2:20p ET' },
+  '2026-04-20': { opp:'vs PHI', time:'7:40p ET' },
+  '2026-04-21': { opp:'vs PHI', time:'7:40p ET' },
+  '2026-04-22': { opp:'vs PHI', time:'7:40p ET' },
+  '2026-04-23': { opp:'vs PHI', time:'2:20p ET' },
+  '2026-04-24': { opp:'@ LAD', time:'10:15p ET' },
+  '2026-04-25': { opp:'@ LAD', time:'7:15p ET' },
+  '2026-04-26': { opp:'@ LAD', time:'4:10p ET' },
+  '2026-04-27': { opp:'@ SD', time:'9:40p ET' },
+  '2026-04-28': { opp:'@ SD', time:'9:40p ET' },
+  '2026-04-29': { opp:'@ SD', time:'4:10p ET' },
+  '2026-05-01': { opp:'vs ARI', time:'2:20p ET' },
+  '2026-05-02': { opp:'vs ARI', time:'2:20p ET' },
+  '2026-05-03': { opp:'vs ARI', time:'2:20p ET' },
+  '2026-05-04': { opp:'vs CIN', time:'7:40p ET' },
+  '2026-05-05': { opp:'vs CIN', time:'7:40p ET' },
+  '2026-05-06': { opp:'vs CIN', time:'7:40p ET' },
+  '2026-05-07': { opp:'vs CIN', time:'2:20p ET' },
+  '2026-05-08': { opp:'@ TEX', time:'8:05p ET' },
+  '2026-05-09': { opp:'@ TEX', time:'7:05p ET' },
+  '2026-05-10': { opp:'@ TEX', time:'2:35p ET' },
+  '2026-05-12': { opp:'@ ATL', time:'7:15p ET' },
+  '2026-05-13': { opp:'@ ATL', time:'7:15p ET' },
+  '2026-05-14': { opp:'@ ATL', time:'7:15p ET' },
+  '2026-05-15': { opp:'@ CWS', time:'7:40p ET' },
+  '2026-05-16': { opp:'@ CWS', time:'7:10p ET' },
+  '2026-05-17': { opp:'@ CWS', time:'2:10p ET' },
+  '2026-05-18': { opp:'vs MIL', time:'7:40p ET' },
+  '2026-05-19': { opp:'vs MIL', time:'7:40p ET' },
+  '2026-05-20': { opp:'vs MIL', time:'7:40p ET' },
+  '2026-05-22': { opp:'vs HOU', time:'2:20p ET' },
+  '2026-05-23': { opp:'vs HOU', time:'2:20p ET' },
+  '2026-05-24': { opp:'vs HOU', time:'2:20p ET' },
+  '2026-05-25': { opp:'@ PIT', time:'6:40p ET' },
+  '2026-05-26': { opp:'@ PIT', time:'6:40p ET' },
+  '2026-05-27': { opp:'@ PIT', time:'6:40p ET' },
+  '2026-05-28': { opp:'@ PIT', time:'6:40p ET' },
+  '2026-05-29': { opp:'@ STL', time:'7:15p ET' },
+  '2026-05-30': { opp:'@ STL', time:'7:15p ET' },
+  '2026-05-31': { opp:'@ STL', time:'7:20p ET' },
+  '2026-06-02': { opp:'vs OAK', time:'8:05p ET' },
+  '2026-06-03': { opp:'vs OAK', time:'8:05p ET' },
+  '2026-06-04': { opp:'vs OAK', time:'8:05p ET' },
+  '2026-06-05': { opp:'vs SF', time:'2:20p ET' },
+  '2026-06-06': { opp:'vs SF', time:'2:20p ET' },
+  '2026-06-07': { opp:'vs SF', time:'8:20p ET' },
+  '2026-06-09': { opp:'@ COL', time:'8:40p ET' },
+  '2026-06-10': { opp:'@ COL', time:'8:40p ET' },
+  '2026-06-11': { opp:'@ COL', time:'3:10p ET' },
+  '2026-06-12': { opp:'@ SF', time:'10:15p ET' },
+  '2026-06-13': { opp:'@ SF', time:'10:05p ET' },
+  '2026-06-14': { opp:'@ SF', time:'3:10p ET' },
+  '2026-06-15': { opp:'vs COL', time:'8:05p ET' },
+  '2026-06-16': { opp:'vs COL', time:'8:05p ET' },
+  '2026-06-17': { opp:'vs COL', time:'8:05p ET' },
+  '2026-06-19': { opp:'vs TOR', time:'2:20p ET' },
+  '2026-06-20': { opp:'vs TOR', time:'2:20p ET' },
+  '2026-06-21': { opp:'vs TOR', time:'2:20p ET' },
+  '2026-06-22': { opp:'@ NYM', time:'7:10p ET' },
+  '2026-06-23': { opp:'@ NYM', time:'7:10p ET' },
+  '2026-06-24': { opp:'@ NYM', time:'7:10p ET' },
+  '2026-06-25': { opp:'@ NYM', time:'7:10p ET' },
+  '2026-06-26': { opp:'@ MIL', time:'7:45p ET' },
+  '2026-06-27': { opp:'@ MIL', time:'7:10p ET' },
+  '2026-06-28': { opp:'@ MIL', time:'2:10p ET' },
+  '2026-06-29': { opp:'vs SD', time:'8:05p ET' },
+  '2026-06-30': { opp:'vs SD', time:'8:05p ET' },
+  '2026-07-01': { opp:'vs SD', time:'2:20p ET' },
+  '2026-07-03': { opp:'vs STL', time:'4:05p ET' },
+  '2026-07-04': { opp:'vs STL', time:'8:08p ET' },
+  '2026-07-05': { opp:'vs STL', time:'2:30p ET' },
+  '2026-07-07': { opp:'@ BAL', time:'6:35p ET' },
+  '2026-07-08': { opp:'@ BAL', time:'6:35p ET' },
+  '2026-07-09': { opp:'@ BAL', time:'6:35p ET' },
+  '2026-07-10': { opp:'@ CIN', time:'7:10p ET' },
+  '2026-07-11': { opp:'@ CIN', time:'7:10p ET' },
+  '2026-07-12': { opp:'@ CIN', time:'1:40p ET' },
+  '2026-07-17': { opp:'vs MIN', time:'8:05p ET' },
+  '2026-07-18': { opp:'vs MIN', time:'2:20p ET' },
+  '2026-07-19': { opp:'vs MIN', time:'2:20p ET' },
+  '2026-07-20': { opp:'vs DET', time:'8:05p ET' },
+  '2026-07-21': { opp:'vs DET', time:'8:05p ET' },
+  '2026-07-22': { opp:'vs DET', time:'8:05p ET' },
+  '2026-07-24': { opp:'@ PIT', time:'6:40p ET' },
+  '2026-07-25': { opp:'@ PIT', time:'6:40p ET' },
+  '2026-07-26': { opp:'@ PIT', time:'1:35p ET' },
+  '2026-07-27': { opp:'@ STL', time:'7:45p ET' },
+  '2026-07-28': { opp:'@ STL', time:'7:45p ET' },
+  '2026-07-29': { opp:'@ STL', time:'7:45p ET' },
+  '2026-07-30': { opp:'@ STL', time:'2:15p ET' },
+  '2026-07-31': { opp:'vs NYY', time:'2:20p ET' },
+  '2026-08-01': { opp:'vs NYY', time:'7:15p ET' },
+  '2026-08-02': { opp:'vs NYY', time:'2:20p ET' },
+  '2026-08-03': { opp:'vs LAD', time:'8:05p ET' },
+  '2026-08-04': { opp:'vs LAD', time:'8:05p ET' },
+  '2026-08-05': { opp:'vs LAD', time:'2:20p ET' },
+  '2026-08-07': { opp:'@ KC', time:'8:10p ET' },
+  '2026-08-08': { opp:'@ KC', time:'7:10p ET' },
+  '2026-08-09': { opp:'@ KC', time:'2:10p ET' },
+  '2026-08-11': { opp:'@ WAS', time:'6:45p ET' },
+  '2026-08-12': { opp:'@ WAS', time:'6:45p ET' },
+  '2026-08-13': { opp:'@ WAS', time:'4:05p ET' },
+  '2026-08-14': { opp:'vs STL', time:'2:20p ET' },
+  '2026-08-15': { opp:'vs STL', time:'2:20p ET' },
+  '2026-08-16': { opp:'vs STL', time:'3:10p ET' },
+  '2026-08-17': { opp:'vs CWS', time:'8:05p ET' },
+  '2026-08-18': { opp:'vs CWS', time:'8:05p ET' },
+  '2026-08-19': { opp:'vs CWS', time:'2:20p ET' },
+  '2026-08-21': { opp:'@ SEA', time:'10:10p ET' },
+  '2026-08-22': { opp:'@ SEA', time:'9:40p ET' },
+  '2026-08-23': { opp:'@ SEA', time:'4:10p ET' },
+  '2026-08-24': { opp:'@ ARI', time:'9:40p ET' },
+  '2026-08-25': { opp:'@ ARI', time:'9:40p ET' },
+  '2026-08-26': { opp:'@ ARI', time:'3:40p ET' },
+  '2026-08-28': { opp:'vs CIN', time:'2:20p ET' },
+  '2026-08-29': { opp:'vs CIN', time:'2:20p ET' },
+  '2026-08-30': { opp:'vs CIN', time:'3:10p ET' },
+  '2026-08-31': { opp:'vs MIL', time:'7:40p ET' },
+  '2026-09-01': { opp:'vs MIL', time:'7:40p ET' },
+  '2026-09-02': { opp:'vs MIL', time:'7:40p ET' },
+  '2026-09-03': { opp:'vs MIL', time:'7:40p ET' },
+  '2026-09-04': { opp:'@ MIA', time:'7:10p ET' },
+  '2026-09-05': { opp:'@ MIA', time:'4:10p ET' },
+  '2026-09-06': { opp:'@ MIA', time:'1:40p ET' },
+  '2026-09-07': { opp:'@ MIL', time:'2:10p ET' },
+  '2026-09-08': { opp:'@ MIL', time:'7:40p ET' },
+  '2026-09-09': { opp:'@ MIL', time:'7:40p ET' },
+  '2026-09-11': { opp:'vs PIT', time:'2:20p ET' },
+  '2026-09-12': { opp:'vs PIT', time:'2:20p ET' },
+  '2026-09-13': { opp:'vs PIT', time:'2:20p ET' },
+  '2026-09-14': { opp:'vs ATL', time:'7:40p ET' },
+  '2026-09-15': { opp:'vs ATL', time:'7:40p ET' },
+  '2026-09-16': { opp:'vs ATL', time:'7:40p ET' },
+  '2026-09-18': { opp:'@ CIN', time:'6:40p ET' },
+  '2026-09-19': { opp:'@ CIN', time:'6:40p ET' },
+  '2026-09-20': { opp:'@ CIN', time:'1:40p ET' },
+  '2026-09-22': { opp:'vs MIA', time:'7:40p ET' },
+  '2026-09-23': { opp:'vs MIA', time:'7:40p ET' },
+  '2026-09-24': { opp:'vs MIA', time:'2:20p ET' },
+  '2026-09-25': { opp:'@ BOS', time:'7:10p ET' },
+  '2026-09-26': { opp:'@ BOS', time:'7:15p ET' },
+  '2026-09-27': { opp:'@ BOS', time:'3:05p ET' },
+};
+
+// ── Storage ────────────────────────────────────────────────
+const SK = 'cubs_tv_auto_v1';
+// games = { 'YYYY-MM-DD': { opp, time, ch, chNum, auto } }
+// auto=true means channel was set by the API (shown with ✦)
+let games = {};
+let cubsByDate = {};
+
+function loadGames() {
+  try {
+    const s = localStorage.getItem(SK);
+    if (s) games = JSON.parse(s);
+  } catch(e) {}
+  // Fill in any missing schedule entries
+  for (const [iso, sched] of Object.entries(SCHEDULE)) {
+    if (!games[iso]) {
+      const nat = NATIONAL[iso];
+      games[iso] = {
+        opp:   sched.opp,
+        time:  sched.time,
+        ch:    nat ? nat.ch : 'extra',
+        chNum: '',
+        auto:  false,
+      };
+    }
+  }
+}
+function saveGames() {
+  try { localStorage.setItem(SK, JSON.stringify(games)); } catch(e) {}
+}
+
+// ── XMLTV fetch & parse ────────────────────────────────────
+// Fetches via Google Apps Script which handles the cross-origin request.
+
+async function fetchGuide() {
+  setStatus('loading', 'Fetching 14-day channel guide from Spectrum…');
+  console.log('Fetching from:', SCRIPT_URL);
+  try {
+    const res = await fetch(SCRIPT_URL);
+    console.log('Response status:', res.status, res.statusText);
+    console.log('Response headers:', [...res.headers.entries()]);
+    if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
+    const xml = await res.text();
+    console.log('Response length:', xml.length, 'First 200 chars:', xml.slice(0,200));
+    if (!xml || xml.trim().length < 100) throw new Error(`Empty/short response (${xml.length} chars): ${xml.slice(0,100)}`);
+    if (!xml.includes('<tv') && !xml.includes('<?xml')) throw new Error(`Not valid XML. Got: ${xml.slice(0,200)}`);
+    const count = parseXMLTV(xml);
+    saveGames();
+    // Find the last date we have guide data for
+    const confirmedDates = Object.keys(cubsByDate || {}).sort();
+    const lastDate = confirmedDates.length ? confirmedDates[confirmedDates.length-1] : 'unknown';
+    const lastFmt = lastDate !== 'unknown' ? new Date(lastDate+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}) : 'unknown';
+    const nextRefresh = confirmedDates.length ? new Date(new Date(lastDate+'T12:00:00').getTime() - 5*86400000).toLocaleDateString('en-US',{month:'short',day:'numeric'}) : '';
+    setStatus('ok', `Channel guide updated — ${count} Cubs game${count!==1?'s':''} found. Channels confirmed through ${lastFmt}. Refresh again after ${nextRefresh} for later games.`);
+    selectPeriod(curPeriod);
+  } catch(e) {
+    console.error('Fetch error:', e);
+    setStatus('err', `Could not fetch guide: ${e.message}. Showing saved data — channels can still be edited manually. (Check browser console for details.)`);
+    console.error(e);
+  }
+}
+
+function parseXMLTV(xmlText) {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(xmlText, 'text/xml');
+
+  // Build channel ID -> channel number map
+  // Use the THIRD display-name which is the actual Spectrum channel number
+  const chanMap = {};
+  doc.querySelectorAll('channel').forEach(ch => {
+    const id = ch.getAttribute('id') || '';
+    const names = Array.from(ch.querySelectorAll('display-name')).map(n => n.textContent.trim());
+    // Third display-name is the channel number (e.g. "771", "12", "29")
+    if (names.length >= 3 && /^\d+$/.test(names[2])) {
+      chanMap[id] = names[2];
+    } else {
+      // Fallback: find any purely numeric display-name
+      const num = names.find(n => /^\d+$/.test(n));
+      if (num) chanMap[id] = num;
+    }
+  });
+
+  // First pass: collect all Cubs games grouped by date
+  // keeping only the LOWEST channel number (= Cubs announcing feed)
+  cubsByDate = {}; // reset each parse
+  doc.querySelectorAll('programme').forEach(prog => {
+    const title    = prog.querySelector('title')?.textContent    || '';
+    const subtitle = prog.querySelector('sub-title')?.textContent || '';
+    const desc     = prog.querySelector('desc')?.textContent     || '';
+
+    const isCubs = title.includes('MLB Baseball') &&
+                   (subtitle.toLowerCase().includes('chicago cubs') ||
+                    desc.toLowerCase().includes('chicago cubs'));
+    if (!isCubs) return;
+
+    const startRaw = prog.getAttribute('start') || '';
+    const chanId   = prog.getAttribute('channel') || '';
+    if (!startRaw) return;
+
+    const y  = startRaw.slice(0,4);
+    const mo = startRaw.slice(4,6);
+    const d  = startRaw.slice(6,8);
+    const h  = startRaw.slice(8,10);
+    const mi = startRaw.slice(10,12);
+
+    // Convert UTC to Eastern to get the correct game date
+    const utcDate = new Date(`${y}-${mo}-${d}T${h}:${mi}:00Z`);
+    const etDate  = new Date(utcDate.toLocaleString('en-US', {timeZone:'America/New_York'}));
+
+    // Filter out overnight/replay entries (before 10am or after 11pm ET)
+    if (etDate.getHours() < 10 || etDate.getHours() >= 23) return;
+
+    // Use local date parts to avoid UTC shifting the date back
+    const iso = etDate.getFullYear() + '-' +
+                String(etDate.getMonth()+1).padStart(2,'0') + '-' +
+                String(etDate.getDate()).padStart(2,'0');
+    const etStr = utcDate.toLocaleTimeString('en-US', {
+      timeZone:'America/New_York',
+      hour:'numeric', minute:'2-digit', hour12:true
+    }).toLowerCase().replace(' ','').replace(':00','') + ' ET';
+
+    const chNum = chanMap[chanId] || '';
+    if (!chNum) return;
+
+    // Only consider MLB Extra Innings channels (771-784)
+    // Skip MLB Network (1141) and other non-Extra-Innings channels
+    const chInt = parseInt(chNum);
+    if (chInt < 771 || chInt > 784) return;
+    // Keep the HIGHER channel number — assumed to be the HD feed
+    if (!cubsByDate[iso]) {
+      cubsByDate[iso] = { chNum, etStr };
+    } else if (chInt > parseInt(cubsByDate[iso].chNum)) {
+      cubsByDate[iso].chNum = chNum;
+    }
+  });
+
+  // Second pass: apply to games object
+  let count = 0;
+  for (const [iso, data] of Object.entries(cubsByDate)) {
+    if (NATIONAL[iso]) continue; // national games have fixed channels
+    if (games[iso]) {
+      games[iso].chNum = data.chNum; // highest channel = HD feed
+      games[iso].auto  = true;
+      games[iso].time  = data.etStr;
+      count++;
+    }
+  }
+  return count;
+}
+
+function setStatus(type, msg) {
+  const bar = document.getElementById('statusBar');
+  bar.className = `status-bar ${type}`;
+  const spin = type === 'loading' ? '<div class="spin"></div>' : '';
+  bar.innerHTML = `${spin}<span>${msg}</span>`;
+}
+
+// ── Periods ────────────────────────────────────────────────
+function getPeriods() {
+  const s = new Date('2026-04-03T12:00:00'), e = new Date('2026-09-28T12:00:00'), ps = [];
+  let d = new Date(s);
+  while (d < e) {
+    const pe = new Date(d); pe.setDate(pe.getDate()+13);
+    if (pe >= e) pe.setTime(e.getTime()-86400000);
+    ps.push({ start:new Date(d), end:new Date(pe) });
+    d.setDate(d.getDate()+14);
+  }
+  return ps;
+}
+function todayD()  { return new Date(new Date().toDateString()); }
+function isoStr(d) {
+  // Use local date parts to avoid UTC offset shifting the date
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+function addD(d,n) { const r=new Date(d); r.setDate(r.getDate()+n); return r; }
+function fmtD(d)   { return d.toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
+
+function currentIdx() {
+  const t=todayD(), ps=getPeriods();
+  for (let i=0;i<ps.length;i++) if(t>=ps[i].start&&t<=addD(ps[i].end,1)) return i;
+  return ps.length-1;
+}
+
+let curPeriod = 0;
+let editIso   = null;
+
+function buildSelect() {
+  const sel = document.getElementById('psel'), ps = getPeriods();
+  sel.innerHTML = '';
+  ps.forEach((p,i) => {
+    const o = document.createElement('option');
+    o.value=i; o.textContent=fmtD(p.start)+' \u2013 '+fmtD(p.end);
+    sel.appendChild(o);
+  });
+  const idx = currentIdx();
+  sel.value = idx;
+  return idx;
+}
+
+function selectPeriod(idx) {
+  curPeriod = idx;
+  const p = getPeriods()[idx];
+  document.getElementById('navLbl').textContent = fmtD(p.start)+' \u2013 '+fmtD(p.end);
+  renderCal(p);
+  buildPrint(p);
+}
+
+// ── Calendar render ────────────────────────────────────────
+const DN = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+function getDays(period) {
+  const s=new Date(period.start), e=new Date(period.end);
+  s.setDate(s.getDate()-s.getDay());
+  e.setDate(e.getDate()+(6-e.getDay()));
+  const days=[]; let d=new Date(s);
+  while(d<=e){days.push(new Date(d));d.setDate(d.getDate()+1)}
+  return days;
+}
+
+function renderCal(period) {
+  const today=isoStr(todayD()), days=getDays(period);
+  let h='';
+  DN.forEach(n => h+=`<div class="dh">${n}</div>`);
+  days.forEach(day => {
+    const iso=isoStr(day), inP=day>=period.start&&day<=period.end, isT=iso===today;
+    const g=games[iso];
+    h+=`<div class="dc${!inP?' out':''}${isT?' tod':''}">`;
+    if(inP){
+      h+=`<span class="dn${isT?' tnow':''}">${day.getDate()}</span>`;
+      if(g){
+        const bg=cb(g.ch), dp=cd(g.ch,g.chNum);
+        h+=`<div class="gb" style="background:${bg}" onclick="editGame('${iso}')">
+          <span class="go">${g.opp}</span>
+          <span class="gc">${dp}</span>
+          <span class="gt">${g.time}</span>
+          ${g.auto?'<span class="gauto">✦ from guide</span>':''}
+        </div>`;
+      } else {
+        h+=`<span class="gadd" onclick="openAddDate('${iso}')">+ add game</span>`;
+      }
+    }
+    h+=`</div>`;
+  });
+  document.getElementById('cal').innerHTML = h;
+}
+
+// ── Print output ───────────────────────────────────────────
+function buildPrint(period) {
+  const pStr=fmtD(period.start)+' \u2013 '+fmtD(period.end), days=getDays(period);
+  let h=`<div class="ph">
+    <div class="pht">Cubs TV Guide<small>Port Orange &middot; Spectrum &middot; All times Eastern</small></div>
+    <div class="pperiod">${pStr}</div>
+  </div>
+  <div class="pleg">
+    <div class="pli"><div class="psw" style="background:#0D47A1"></div>MLB Extra Innings</div>
+    <div class="pli"><div class="psw" style="background:#B71C1C"></div>FOX &middot; Ch.1035</div>
+    <div class="pli"><div class="psw" style="background:#C62828"></div>FS1 &middot; Ch.1153</div>
+    <div class="pli"><div class="psw" style="background:#E65100"></div>ESPN &middot; Ch.1127</div>
+    <div class="pli"><div class="psw" style="background:#BF360C"></div>ABC &middot; Ch.1090</div>
+    <div class="pli"><div class="psw" style="background:#1B5E20"></div>TBS &middot; Ch.1236</div>
+    <div class="pli"><div class="psw" style="background:#555"></div>Not available</div>
+  </div>
+  <div class="pgrid">`;
+  DN.forEach(n=>h+=`<div class="pdh">${n}</div>`);
+  days.forEach(day=>{
+    const iso=isoStr(day), inP=day>=period.start&&day<=period.end, g=games[iso];
+    h+=`<div class="pdc${!inP?' out':''}">`;
+    if(inP){
+      h+=`<span class="pdn">${day.getDate()}</span>`;
+      if(g){
+        const bg=cb(g.ch), dp=cd(g.ch,g.chNum);
+        h+=`<div class="pbadge" style="background:${bg}">
+          <span class="popp">${g.opp}</span>
+          <span class="pch">${dp}</span>
+          <span class="ptm">${g.time}</span>
+        </div>`;
+      } else {
+        h+=`<span class="poff">&mdash; off day &mdash;</span>`;
+      }
+    }
+    h+=`</div>`;
+  });
+  h+=`</div><div class="pftr">Spectrum / Volusia Co. FL (Port Orange). Channel data from xmltvlistings.com (lineup ${LINEUP_ID}). ✦ = auto-detected. Gray = unavailable (Apple TV+/Peacock). Printed ${new Date().toLocaleDateString()}.</div>`;
+  document.getElementById('printArea').innerHTML = h;
+}
+
+// ── Modal ──────────────────────────────────────────────────
+function editGame(iso) {
+  editIso=iso;
+  const g=games[iso]||{opp:'',time:'7:05p ET',ch:'extra',chNum:''};
+  const d=new Date(iso+'T12:00:00');
+  document.getElementById('modalTitle').textContent='Edit \u2014 '+d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+  document.getElementById('fOpp').value=g.opp;
+  document.getElementById('fTime').value=g.time;
+  document.getElementById('fCh').value=g.ch;
+  document.getElementById('fNum').value=g.chNum||'';
+  document.getElementById('delbtn').style.display='block';
+  updPrev();
+  document.getElementById('modalOverlay').classList.add('open');
+}
+function openAdd()       { openAddDate(isoStr(getPeriods()[curPeriod].start)); }
+function openAddDate(iso){
+  editIso=iso;
+  const d=new Date(iso+'T12:00:00');
+  document.getElementById('modalTitle').textContent='Add game \u2014 '+d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+  document.getElementById('fOpp').value='';
+  document.getElementById('fTime').value='7:05p ET';
+  document.getElementById('fCh').value='extra';
+  document.getElementById('fNum').value='';
+  document.getElementById('delbtn').style.display='none';
+  updPrev();
+  document.getElementById('modalOverlay').classList.add('open');
+}
+function closeModal(){ document.getElementById('modalOverlay').classList.remove('open'); }
+function updPrev(){
+  const k=document.getElementById('fCh').value, n=document.getElementById('fNum').value.trim();
+  document.getElementById('xtra').style.display=k==='extra'?'block':'none';
+  const p=document.getElementById('prev');
+  p.textContent=cd(k,n); p.style.background=cb(k);
+}
+function saveGame(){
+  const opp=document.getElementById('fOpp').value.trim();
+  if(!opp){alert('Please enter an opponent.');return}
+  games[editIso]={opp,time:document.getElementById('fTime').value.trim()||'7:05p ET',ch:document.getElementById('fCh').value,chNum:document.getElementById('fNum').value.trim(),auto:false};
+  saveGames(); closeModal(); selectPeriod(curPeriod); toast('Saved!');
+}
+function delGame(){
+  if(!confirm('Remove this game?'))return;
+  delete games[editIso];
+  saveGames(); closeModal(); selectPeriod(curPeriod); toast('Removed.');
+}
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2200);
+}
+
+// ── Init ───────────────────────────────────────────────────
+loadGames();
+const startIdx = buildSelect();
+selectPeriod(startIdx);
+// Channel guide fetches only when Refresh button is clicked — not on page load
+</script>
+</body>
+</html>
